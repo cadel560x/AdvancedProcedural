@@ -1,0 +1,7 @@
+v0.1
+-Minor format change in search student option in the main menu
+-Manage NULL haystack in 'searchStudent' function
+-Minor format change in 'createStudent' function
+-Mayor change in 'addStudentAtStart' to use double inderection with headPtr parameter (**headPtr)
+v0.2
+-Mayor change in 'size', node counter 'i' set to '1' if 'headPtr' is not 'NULL'
