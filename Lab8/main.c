@@ -21,7 +21,7 @@ struct student {
 typedef struct student student_t; // I saw this on Deitel & Deitel's book
 
 // Functions' prototypes
-void addStudentAtStart(char id[], student_t *headPtr);
+void addStudentAtStart(char id[], student_t **headPtr);
 void addStudent(char id[], student_t *headPtr);
 int size(student_t *headPtr);
 void display(student_t *headPtr);
@@ -30,6 +30,7 @@ void printToFile(student_t *headPtr);
 int searchStudent(char needle[], student_t * hayStack);
 void deleteFirstStudent(student_t *headPtr);
 void addStudentAt(int position, char id[], student_t *headPtr);
+void deleteStudentAt(int position, student_t *headPtr);
 
 // Auxiliary functions' prototypes
 student_t * createStudent(char id[]);
@@ -52,8 +53,6 @@ int main(void) {
 //	'*headPtr' as declared above
 //	'position' as declared above
 
-//  Auxiliary variables
-
 //  Initializing variables
 	headPtr = NULL;
 
@@ -62,7 +61,7 @@ int main(void) {
 		printTitle("Student List");
 		puts("1) Add a student at the end of the list.");
 		puts("2) Add a student at the top of the list.");
-		puts("3) Number of students	in the the list.");
+		puts("3) Number of students in the list.");
 		puts("4) Delete a student.");
 		puts("5) Display student list.");
 		puts("6) Print student list to a file.");
@@ -80,14 +79,14 @@ int main(void) {
 			printTitle("Add a student at the end");
 			captureString(id, "Please enter new student's id: ");
 			if (headPtr == NULL)
-				addStudentAtStart(headPtr, id);
+				addStudentAtStart(id, &headPtr);
 			else
 				addStudent(id, headPtr);
 			break;
 		case 2:
 			printTitle("Add a student at the top");
 			captureString(id, "Please enter new student's id: ");
-			addStudentAtStart(id, headPtr);
+			addStudentAtStart(id, &headPtr);
 			break;
 		case 3:
 			printTitle("Number of students");
@@ -145,12 +144,26 @@ int main(void) {
 			printTitle("Add a student at arbitrary position");
 			position = captureInteger("Please enter position of insertion: ");
 			captureString(id, "Please enter new student's id: ");
-			if (headPtr == NULL)
-				addStudentAtStart(headPtr, id);
-			else
-				addStudentAt(position, headPtr, id);
+
+			if (headPtr == NULL) {
+                puts("Empty list. Adding student at the beginning");
+				addStudentAtStart(id, &headPtr);
+			}
+			else if (position <= 0 || position > size(headPtr))
+                puts("Incorrect position.");
+            else
+				addStudentAt(position, id, headPtr);
 			break;
 		case 10:
+		    printTitle("Delete a student at arbitrary position");
+		    position = captureInteger("Please enter position to delete: ");
+
+			if (headPtr == NULL)
+                puts("Empty list. Nothing to delete");
+			else if (position <=0 || position > size(headPtr))
+                puts("Incorrect position.");
+            else
+				deleteStudentAt(position, headPtr);
 			break;
 		case -1:
 			break; // just exit
@@ -175,23 +188,23 @@ int main(void) {
 
 // Functions prototypes
 
-void addStudentAtStart(char id[], student_t * headPtr) {
+void addStudentAtStart(char id[], student_t ** headPtr) {
 //	Local variables
 //	Local auxiliary local variables
 	student_t *newNode;
 
 //	Process
-	if (searchStudent(id, headPtr) == 0) {
+	if (searchStudent(id, *headPtr) == 0) {
 //		This 'id' doesn't exists so we create a new node
-		newNode = createStudent(id, newNode);
+		newNode = createStudent(id);
 //		The '->NEXT' of the newly created node points where 'headPtr' points
-		newNode->NEXT = headPtr;
+		newNode->NEXT = *headPtr;
 //		Now headPtr points to the newly created node
-		headPtr = newNode;
+		*headPtr = newNode;
 	}
 	else
 		puts("This student already exists.");
-	
+
 } // addStudentAtStart
 
 void addStudent(char id[], student_t * headPtr) {
@@ -203,7 +216,7 @@ void addStudent(char id[], student_t * headPtr) {
 	temp = headPtr;
 
 //	Process
-	if (searchStudent(headPtr, id)==0) {
+	if (searchStudent(id, headPtr)==0) {
 //		Loop til the end of the list
 		while (temp->NEXT != NULL)
 			temp = temp->NEXT;
@@ -225,11 +238,11 @@ int size(student_t * headPtr) {
 //	Local auxiliary local variables
 	student_t *temp;
 	int i;
-	
+
 //	Initialize local variables
 	temp = headPtr;
 	i = 0;
-	
+
 //	Process
 //  Loop til the end of the list
 	while (temp->NEXT != NULL) {
@@ -336,12 +349,14 @@ int searchStudent(char needle[], student_t * hayStack) {
 	temp = hayStack;
 
 //	Process
-	while (temp->NEXT != NULL) {
-		if (strcmp(needle, temp->id) == 0)
-			return i;
+    if (temp != NULL) {
+        while (temp->NEXT != NULL) {
+            if (strcmp(needle, temp->id) == 0)
+                return i;
 
-		++i;
-	}
+            ++i;
+        }
+    }
 
 	return 0;
 
@@ -378,25 +393,60 @@ void addStudentAt(int position, char id[], student_t * headPtr) {
 	temp = headPtr;
 
 //	Process
-//  This 'id' doesn't exists so we loop to the desired position
+//  If this 'id' doesn't exists, we loop to the desired position
 	if (searchStudent(id, headPtr) == 0) {
 		if (position == 1)
-			addStudentAtStart(id, headPtr);
+			addStudentAtStart(id, &headPtr);
 		else {
-
-			for (i = 1; i < position; ++i)
+//          Loop until we reach the point of insertion
+			for (i = 1; i < position - 1; ++i)
 				temp = temp->NEXT;
 
-			newNode = createStudent(id, newNode);
-//		The '->NEXT' of the newly created node points where 'headPtr' points
-			newNode->NEXT = headPtr;
-//		Now headPtr points to the newly created node
-			headPtr = newNode;
+//          Create a new node
+			newNode = createStudent(id);
+//		    The '->NEXT' of the newly created node points where 'temp->NEXT' points
+            newNode->NEXT = temp->NEXT;
+//          Now the 'temp->NEXT' points to the newly created node
+			temp->NEXT = newNode;
 		}
 	}
 	else
 		puts("This student already exists.");
+
 } // addStudentAt
+
+void deleteStudentAt(int position, student_t *headPtr) {
+//	Local variables
+//	Local auxiliary local variables
+    student_t *oldTemp;
+    student_t *temp;
+    int i;
+
+//	Initialize local variables
+    oldTemp = headPtr;
+    temp = headPtr->NEXT;
+
+//	Process
+//  We check the position
+    if (position == 1)
+        deleteFirstStudent(headPtr);
+    else {
+//      Loop until we reach the node before the chosen one
+        for (i = 1; i < position - 1; ++i)
+            temp = temp->NEXT;
+
+//      Bypass the chosen node.
+//      This is done by making the '->NEXT' of the previous node equals to the '->NEXT' of
+//      the chosen node
+        oldTemp->NEXT = temp->NEXT;
+//      Free the chosen node
+        free(temp);
+    }
+
+
+} // deleteStudentAt
+
+
 
 
 // Auxiliary functions definitions
@@ -417,8 +467,8 @@ student_t * createStudent(char id[]) {
 	newNode->age = captureInteger("Please enter new student's age: ");
 	newNode->average = captureFloat("Please enter new student's average: ");
 
-	captureString(newNode->email, "Please enter new student's name: ");
-	captureString(newNode->mobile, "Please enter new student's name: ");
+	captureString(newNode->email, "Please enter new student's email: ");
+	captureString(newNode->mobile, "Please enter new student's mobile: ");
 
 	return newNode;
 
@@ -477,10 +527,6 @@ int captureFloat(char * message) {
 } // captureFloat
 
 void captureString(char * dst, char * message) {
-//	Local variables
-//	Local input variables
-	char *string;
-
 //	Process
 	printf(message);
 	gets(dst);
